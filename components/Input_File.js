@@ -17,7 +17,7 @@ const Input_File = ({ name, onChange }) => {
 
   return (
     <div className="flex flex-col gap-2 w-full">
-      <label className="text-gray-700 font-semibold">{name}</label>
+      {name && <label className="text-gray-700 font-semibold">{name}</label>}
       <div className="rounded-sm border border-gray-400 overflow-hidden">
         <div
           onClick={handleClick}
