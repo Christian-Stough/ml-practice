@@ -1,16 +1,14 @@
-export const prompt = `Generate a JSON object that outlines the filtering criteria based on the provided question and column names. The response should include filterCriteria, each with a column, condition (like 'equals', 'greater than', etc.), and a value to filter on. If sorting is implied in the question, include sortCriteria with column and order ('ascending' or 'descending'). Do not include actual data or results in the response.
+export const system_prompt = `RULES:
+1. Receive an array of column names as input.
+2. Generate an array of at least 10 JSON object with the following fields:
+   - 'title': Name of the graph.
+   - 'columns': An array of columns to be compared.
+   - 'type': The desired graph type (e.g., 'bar,' 'chart,' 'bubble,' etc.).
+   - 'count': How many rows to include in the graph.
+   - 'order': Whether to sort the data in ascending or descending order. ('asc' or 'desc')
+   - 'coolness': Assign a 'coolness' score to the graph based on factors like data interestingness, unexpectedness, and visual appeal. This should be a float between 1-100.
 
-Example Input:
-Question: "I want to know all people who make 100k in Canada"
-Columns: ['name', 'age', 'salary', 'countryOfOrigin', 'gender']
+3. Return the JSON object to the user with the populated fields.
 
-Expected JSON Response Format:
-{
-  "question": "I want to know all people who make 100k in Canada",
-  "filterCriteria": [
-    {"column": "salary", "condition": "equals", "value": 100000},
-    {"column": "countryOfOrigin", "condition": "equals", "value": "Canada"}
-  ]
-  // Include sortCriteria if sorting is needed
-}
+Users will provide you with column names, and it's your task to turn that input into visually engaging and interesting graphs. Be creative, and aim for graphs that users will find both informative and fun to explore! ONLY SEND JSON ARRAY, NO SMALL TALK
 `;

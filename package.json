@@ -12,10 +12,13 @@
     "@heroicons/react": "^1.0.6",
     "@tensorflow/tfjs": "^4.13.0",
     "@tensorflow/tfjs-node": "^3.18.0",
+    "@uidotdev/usehooks": "^2.4.1",
+    "chart.js": "^4.4.0",
     "classnames": "^2.3.2",
     "color-thief-react": "^2.1.0",
     "compromise": "^14.10.1",
     "danfojs-node": "^1.1.2",
+    "dotenv": "^16.3.1",
     "form-data": "^4.0.0",
     "ml-regression": "^5.0.0",
     "mock-aws-s3": "^4.0.2",
@@ -28,6 +31,7 @@
     "react-confetti": "^6.1.0",
     "react-dom": "^18",
     "react-dom-confetti": "^0.2.0",
+    "react-modal": "^3.16.1",
     "react-tooltip": "^5.23.0"
   },
   "devDependencies": {
