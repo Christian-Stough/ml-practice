@@ -6,10 +6,12 @@ import { add_picture_url_to_json } from "@/util/server/like-button-add";
 import { Main_Card } from "@/components/Main_Card";
 import { Main_Header } from "@/components/Main_Header";
 import { Graphs } from "@/components/Graphs";
+import { parseCSV } from "@/util/server/csv_to_array";
 
 const HomePage = () => {
   const [imageUrl, setImageUrl] = useState(null);
   const [file, setFile] = useState(null);
+  const [fileArray, setFileArray] = useState([]);
   const [loading, startTransition] = useTransition();
 
   const [data, setData] = useState(null); // [ { title, columns, type, count, order, coolness } ]
@@ -22,101 +24,149 @@ const HomePage = () => {
       );
   }, []);
 
-  const handleFileChange = (file) => {
+  const handleFileChange = async (file) => {
     setFile(file);
+
+    const formData = new FormData();
+
+    formData.append("file", file);
+
+    const data = await parseCSV(formData);
+    setFileArray(data);
   };
 
   const handleClick = async () => {
     let formData = new FormData();
     formData.append("data", file);
     startTransition(async () => {
-      //await new Promise((resolve) => setTimeout(resolve, 5000));
-      //const results = await process_question(formData);
+      // const results = await process_question(formData);
       // console.log(results);
+
+      // if (typeof results !== "object") return;
 
       const results = [
         {
-          title: "Population Distribution",
-          columns: ["Population code", "Population name"],
+          title: "Position Distribution",
+          columns: ["Pos"],
+          desc: "A visual representation of the distribution of different positions in the dataset.",
+          label: [
+            {
+              column: "Pos",
+              name: "Position",
+            },
+          ],
+          type: "pie",
+          coolness: 72.3,
+        },
+        {
+          title: "Extra Points and Field Goals",
+          columns: ["XPM", "XPA", "FGM", "FGA"],
+          desc: "A comparison of successful extra points and field goals made by players.",
+          label: [
+            {
+              column: "XPM",
+              name: "Extra Points Made",
+            },
+            {
+              column: "XPA",
+              name: "Extra Points Attempted",
+            },
+            {
+              column: "FGM",
+              name: "Field Goals Made",
+            },
+            {
+              column: "FGA",
+              name: "Field Goals Attempted",
+            },
+          ],
+          type: "doughnut",
+          coolness: 78.9,
+        },
+        {
+          title: "Player's Age vs Points Scored",
+          columns: ["Age", "Pts"],
+          desc: "An analysis of how age affects the number of points scored by players.",
+          label: [
+            {
+              column: "Age",
+              name: "Player's Age",
+            },
+            {
+              column: "Pts",
+              name: "Points Scored",
+            },
+          ],
+          type: "line",
+          coolness: 85.6,
+        },
+        {
+          title: "Total Points Distribution",
+          columns: ["Pts"],
+          desc: "A visual representation of the distribution of total points scored by players.",
+          label: [
+            {
+              column: "Pts",
+              name: "Total Points",
+            },
+          ],
+          type: "polarArea",
+          coolness: 88.7,
+        },
+        {
+          title: "Touchdowns by Type",
+          columns: [
+            "RshTD",
+            "RecTD",
+            "PR TD",
+            "KR TD",
+            "FblTD",
+            "IntTD",
+            "OthTD",
+          ],
+          desc: "A comparison of different types of touchdowns scored by players.",
+          label: [
+            {
+              column: "RshTD",
+              name: "Rushing TDs",
+            },
+            {
+              column: "RecTD",
+              name: "Receiving TDs",
+            },
+            {
+              column: "PR TD",
+              name: "Punt Return TDs",
+            },
+            {
+              column: "KR TD",
+              name: "Kickoff Return TDs",
+            },
+            {
+              column: "FblTD",
+              name: "Fumble Recovery TDs",
+            },
+            {
+              column: "IntTD",
+              name: "Interception Return TDs",
+            },
+            {
+              column: "OthTD",
+              name: "Other TDs",
+            },
+          ],
           type: "bar",
-          count: 10,
-          order: "desc",
-          coolness: 85.2,
-        },
-        {
-          title: "Superpopulation Distribution",
-          columns: ["Superpopulation code", "Superpopulation name"],
-          type: "chart",
-          count: 10,
-          order: "desc",
-          coolness: 79.5,
-        },
-        {
-          title: "Sample Distribution by Sex",
-          columns: ["Sample name", "Sex"],
-          type: "bar",
-          count: 10,
-          order: "desc",
-          coolness: 87.8,
-        },
-        {
-          title: "Most Common Data Collections",
-          columns: ["Data collections"],
-          type: "bar",
-          count: 10,
-          order: "desc",
-          coolness: 82.1,
-        },
-        {
-          title: "Population Elasticity",
-          columns: ["Population elastic ID"],
-          type: "chart",
-          count: 10,
-          order: "desc",
-          coolness: 76.3,
-        },
-        {
-          title: "Distribution of Biosample IDs",
-          columns: ["Biosample ID"],
-          type: "bar",
-          count: 10,
-          order: "desc",
-          coolness: 84.7,
-        },
-        {
-          title: "Population and Superpopulation Comparison",
-          columns: ["Population code", "Superpopulation code"],
-          type: "bubble",
-          count: 10,
-          order: "asc",
           coolness: 91.2,
         },
-        {
-          title: "Sample and Population Comparison",
-          columns: ["Sample name", "Population name"],
-          type: "bubble",
-          count: 10,
-          order: "asc",
-          coolness: 88.6,
-        },
-        {
-          title: "Population and Data Collections Comparison",
-          columns: ["Population name", "Data collections"],
-          type: "bubble",
-          count: 10,
-          order: "asc",
-          coolness: 93.8,
-        },
-        {
-          title: "Superpopulation and Data Collections Comparison",
-          columns: ["Superpopulation name", "Data collections"],
-          type: "bubble",
-          count: 10,
-          order: "asc",
-          coolness: 90.4,
-        },
       ];
-      setData(results);
+
+      setData(
+        results.sort((a, b) => {
+          if (a.coolness > b.coolness) return 1;
+          else if (a.coolness < b.coolness) return -1;
+          else return 0;
+        })
+      );
     });
   };
 
@@ -137,7 +187,7 @@ const HomePage = () => {
             loading={loading}
           />
 
-          <Graphs count={5} />
+          <Graphs chartsConfig={data} fileArray={fileArray} />
         </>
       ) : (
         <>

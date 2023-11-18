@@ -5,14 +5,10 @@ import Chart from "../util/chart_config";
 function FullScreenGraphModal({ chart, setIsModalOpen }) {
   const chartRef = useRef(null);
 
-  console.log(chart);
-
   useLockBodyScroll();
 
   useEffect(() => {
     const { name, type, data, options } = chart;
-
-    console.log(data);
 
     const chartInstance = () => {
       const ctx = chartRef.current.getContext("2d");

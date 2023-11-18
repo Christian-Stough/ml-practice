@@ -2,46 +2,51 @@ import React, { useEffect, useRef, useState } from "react";
 import FullScreenGraphModal from "./Fullscreen_Graph_Modal";
 import Chart from "../util/chart_config";
 
-export const Graphs = ({ count }) => {
-  const canvasRefs = Array.from({ length: count }, () => useRef(null));
+export const Graphs = ({ chartsConfig, csvData }) => {
+  const canvasRefs = Array.from({ length: chartsConfig.length }, () =>
+    useRef(null)
+  );
   const [charts, setCharts] = useState([]); // [ { index, name, type, data, options } ]
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalChart, setModalChart] = useState(null);
 
   useEffect(() => {
-    const names = Array.from({ length: count }, () => randomChartName());
-
-    const chartData = names.map((name, i) => ({
+    const chartData = chartsConfig.map((config, i) => ({
       index: i,
-      name: name,
-      type: "",
+      name: config.title,
+      type: config.type,
       data: {},
       options: {},
+      label: config.label,
+      columns: config.columns,
+      description: config.desc,
     }));
 
-    const chartTypes = [
-      "line",
-      "bubble",
-      "pie",
-      "bar",
-      "doughnut",
-      "polarArea",
-      "scatter",
-    ];
+    // const chartTypes = [
+    //   "line",
+    //   "bubble",
+    //   "pie",
+    //   "bar",
+    //   "doughnut",
+    //   "polarArea",
+    //   "scatter",
+    // ];
 
     const chartInstances = canvasRefs.map((canvasRef, i) => {
       const ctx = canvasRef.current.getContext("2d");
-      const randomChartType =
-        chartTypes[Math.floor(Math.random() * chartTypes.length)];
+      const chartType = chartData[i].type;
+      const chartLabel = chartData[i].label;
 
       const data =
-        randomChartType === "bubble" || randomChartType === "scatter"
+        chartType === "bubble" || chartType === "scatter"
           ? Array.from({ length: 10 }, () => ({
               x: Math.random(),
               y: Math.random(),
-              ...(randomChartType === "bubble" && { r: Math.random() * 10 }),
+              ...(chartType === "bubble" && { r: Math.random() * 10 }),
             }))
           : Array.from({ length: 10 }, () => Math.floor(Math.random() * 100));
+
+      console.log(data);
 
       const labels = Array.from({ length: 10 }, (_, i) => `Label ${i}`);
 
@@ -51,8 +56,6 @@ export const Graphs = ({ count }) => {
             Math.random() * 255
           )}, ${Math.floor(Math.random() * 255)}, 0.5)`
       );
-
-      console.log(`${i}:${randomChartType}`);
 
       const options = {
         responsive: true,
@@ -76,7 +79,7 @@ export const Graphs = ({ count }) => {
         },
       };
 
-      if (randomChartType === "polarArea") {
+      if (chartType === "polarArea") {
         options.scales = {
           r: {
             ticks: {
@@ -86,12 +89,12 @@ export const Graphs = ({ count }) => {
         };
       }
 
-      chartData[i].type = randomChartType;
+      chartData[i].type = chartType;
       chartData[i].data = {
         labels,
         datasets: [
           {
-            label: `Dataset ${i}`,
+            label: chartLabel, // use chartLabel here
             data,
             backgroundColor: backgroundColors,
             borderColor: "rgba(0, 123, 255, 1)", // Light blue color
@@ -105,12 +108,12 @@ export const Graphs = ({ count }) => {
       setCharts(chartData);
 
       return new Chart(ctx, {
-        type: randomChartType,
+        type: chartType,
         data: {
           labels,
           datasets: [
             {
-              label: `Dataset ${i}`,
+              label: chartLabel, // use chartLabel here
               data,
               backgroundColor: backgroundColors,
               borderColor: "rgba(0, 123, 255, 1)", // Light blue color
@@ -123,12 +126,10 @@ export const Graphs = ({ count }) => {
       });
     });
 
-    console.log(chartInstances[0].data.datasets[0].data);
-
     return () => {
       chartInstances.forEach((chartInstance) => chartInstance.destroy());
     };
-  }, [count]);
+  }, [chartsConfig]);
 
   return (
     <div className="grid grid-cols-3 gap-4 p-4 overflow-y-auto">

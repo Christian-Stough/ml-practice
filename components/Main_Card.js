@@ -10,7 +10,7 @@ export const Main_Card = ({ handleFileChange, handleClick, loading }) => {
         <div className="loader w-fit"></div>
       ) : (
         <div className="flex flex-col items-center justify-center gap-4 w-full bg-white bg-opacity-40 backdrop-filter backdrop-blur-sm rounded-sm p-6 text-gray-800">
-          <div className="flex items-center justify-center p-4 bg-white bg-opacity-20 rounded-sm shadow">
+          <div className="flex items-center w-full justify-center p-4 bg-white bg-opacity-20 rounded-sm shadow">
             <Image
               src="/logo.png"
               className=""
