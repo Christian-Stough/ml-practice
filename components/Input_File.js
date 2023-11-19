@@ -1,7 +1,8 @@
 import React, { useRef, useState } from "react";
 import { DocumentAddIcon } from "@heroicons/react/solid";
+import { RefreshIcon } from "@heroicons/react/outline"; // Import a loading icon
 
-const Input_File = ({ name, onChange }) => {
+const Input_File = ({ name, onChange, loading }) => {
   const fileInputRef = useRef();
   const [fileName, setFileName] = useState(null);
 
@@ -12,7 +13,9 @@ const Input_File = ({ name, onChange }) => {
   };
 
   const handleClick = () => {
-    fileInputRef.current.click();
+    if (!loading) {
+      fileInputRef.current.click();
+    }
   };
 
   return (
@@ -22,14 +25,22 @@ const Input_File = ({ name, onChange }) => {
         <div
           onClick={handleClick}
           className={`${
-            fileName && "bg-blue-400 bg-opacity-25"
-          } group w-full flex items-center px-3 py-2 text-gray-700 bg-white bg-opacity-20 backdrop-filter backdrop-blur-md cursor-pointer hover:bg-blue-400 hover:bg-opacity-25 transition-all duration-150 ease-in focus-within:border-blue-500 focus-within:outline-none`}
+            fileName && !loading && "bg-blue-400 bg-opacity-25"
+          } group w-full flex items-center px-3 py-2 text-gray-700 bg-white bg-opacity-20 backdrop-filter backdrop-blur-md cursor-pointer ${
+            loading
+              ? "opacity-50"
+              : "hover:bg-blue-400 hover:bg-opacity-25 transition-all duration-150 ease-in focus-within:border-blue-500 focus-within:outline-none"
+          }`}
         >
-          <DocumentAddIcon
-            className={`${
-              fileName && "text-blue-400"
-            } w-5 h-5 mr-2 text-gray-400 transform transition-all duration-150 group-hover:scale-110 group-hover:text-blue-400`}
-          />
+          {loading ? (
+            <RefreshIcon className="w-5 h-5 mr-2 animate-spin" />
+          ) : (
+            <DocumentAddIcon
+              className={`${
+                fileName && "text-blue-400"
+              } w-5 h-5 mr-2 text-gray-400`}
+            />
+          )}
           <div
             data-tip={fileName || ""}
             className="text-lg group-hover:scale-100 transform transition-all duration-150 overflow-hidden overflow-ellipsis whitespace-nowrap"
