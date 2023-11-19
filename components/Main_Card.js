@@ -3,7 +3,12 @@ import Image from "next/image";
 import Input_File from "./Input_File"; // Update with your actual import path
 import Button from "./Button"; // Update with your actual import path
 
-export const Main_Card = ({ handleFileChange, handleClick, loading }) => {
+export const Main_Card = ({
+  handleFileChange,
+  handleClick,
+  loading,
+  fileLoading,
+}) => {
   return (
     <div className="w-full max-w-[350px] flex flex-col items-center gap-8">
       {loading ? (
@@ -23,7 +28,11 @@ export const Main_Card = ({ handleFileChange, handleClick, loading }) => {
             </span>
           </div>
 
-          <Input_File name="File" onChange={handleFileChange} />
+          <Input_File
+            name="File"
+            onChange={handleFileChange}
+            loading={fileLoading}
+          />
           <Button className="" handleClick={handleClick}>
             Analyze
           </Button>

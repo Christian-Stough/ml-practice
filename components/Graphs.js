@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import FullScreenGraphModal from "./Fullscreen_Graph_Modal";
 import Chart from "../util/chart_config";
 
-export const Graphs = ({ chartsConfig, csvData }) => {
+export const Graphs = ({ chartsConfig, sortedFile }) => {
   const canvasRefs = Array.from({ length: chartsConfig.length }, () =>
     useRef(null)
   );
@@ -11,44 +11,107 @@ export const Graphs = ({ chartsConfig, csvData }) => {
   const [modalChart, setModalChart] = useState(null);
 
   useEffect(() => {
+    if (!chartsConfig) return;
+
     const chartData = chartsConfig.map((config, i) => ({
       index: i,
-      name: config.title,
       type: config.type,
-      data: {},
-      options: {},
-      label: config.label,
-      columns: config.columns,
+      name: config.title,
       description: config.desc,
+      data: [],
+      options: {},
+      labels: [],
+      "y-column": config["y-data"],
+      "x-column": config["x-data"],
+      filter: config["x-sort-filter"],
+      average: config["x-average"],
     }));
-
-    // const chartTypes = [
-    //   "line",
-    //   "bubble",
-    //   "pie",
-    //   "bar",
-    //   "doughnut",
-    //   "polarArea",
-    //   "scatter",
-    // ];
 
     const chartInstances = canvasRefs.map((canvasRef, i) => {
       const ctx = canvasRef.current.getContext("2d");
       const chartType = chartData[i].type;
-      const chartLabel = chartData[i].label;
 
-      const data =
-        chartType === "bubble" || chartType === "scatter"
-          ? Array.from({ length: 10 }, () => ({
-              x: Math.random(),
-              y: Math.random(),
-              ...(chartType === "bubble" && { r: Math.random() * 10 }),
-            }))
-          : Array.from({ length: 10 }, () => Math.floor(Math.random() * 100));
+      let values = [];
 
+      sortedFile.forEach((file) => {
+        file[chartData[i]["x-column"]].forEach((x, innerI) =>
+          values.push({
+            x: x,
+            y: file[chartData[i]["y-column"]][innerI],
+          })
+        );
+      });
+
+      if (chartData[i].name === "GDP per Capita by Country") {
+        console.log("values");
+        console.log(values);
+      }
+
+      let combined = {};
+      const counts = {};
+
+      values.forEach((value) => {
+        let x = value.x;
+        let y = value.y;
+
+        if (typeof y === "string") {
+          y = y.replace(/[$€]/g, "").trim();
+          if (y === "" || y === " ") y = "0";
+          y = Number(y);
+          if (isNaN(y)) y = 0;
+        }
+
+        try {
+          y = parseFloat(y);
+        } catch (e) {
+          console.log(`Error parsing ${y} to int`);
+        }
+
+        if (combined[x]) {
+          combined[x] += y;
+          counts[x]++;
+        } else {
+          combined[x] = y;
+          counts[x] = 1;
+        }
+      });
+
+      Object.keys(combined).forEach((key) =>
+        combined[key] === undefined ? delete combined[key] : {}
+      );
+
+      const combinedArray = Object.keys(combined).map((key) => ({
+        x: key,
+        y: combined[key] / counts[key],
+      }));
+
+      combinedArray.sort((a, b) => {
+        if (chartData[i].filter === "asc") {
+          if (a.y > b.y) return 1;
+          else if (a.y < b.y) return -1;
+          else return 0;
+        } else if (chartData[i].filter === "desc") {
+          if (a.y > b.y) return -1;
+          else if (a.y < b.y) return 1;
+          else return 0;
+        } else return 0;
+      });
+
+      if (chartData[i].name === "HDI by Region") {
+        console.log("combinedArray");
+        console.log(combinedArray);
+      }
+
+      let data = combinedArray.slice(0, 10);
+
+      data = data.filter(
+        (item) => item.x !== undefined && item.x !== "undefined"
+      );
+
+      data = data.sort((a, b) => {
+        return parseFloat(a.y) - parseFloat(b.y);
+      });
       console.log(data);
-
-      const labels = Array.from({ length: 10 }, (_, i) => `Label ${i}`);
 
       const backgroundColors = data.map(
         () =>
@@ -79,22 +142,10 @@ export const Graphs = ({ chartsConfig, csvData }) => {
         },
       };
 
-      if (chartType === "polarArea") {
-        options.scales = {
-          r: {
-            ticks: {
-              color: "rgba(0, 0, 0, 0.5)", // 50% opacity black color
-            },
-          },
-        };
-      }
-
       chartData[i].type = chartType;
       chartData[i].data = {
-        labels,
         datasets: [
           {
-            label: chartLabel, // use chartLabel here
             data,
             backgroundColor: backgroundColors,
             borderColor: "rgba(0, 123, 255, 1)", // Light blue color
@@ -110,10 +161,8 @@ export const Graphs = ({ chartsConfig, csvData }) => {
       return new Chart(ctx, {
         type: chartType,
         data: {
-          labels,
           datasets: [
             {
-              label: chartLabel, // use chartLabel here
               data,
               backgroundColor: backgroundColors,
               borderColor: "rgba(0, 123, 255, 1)", // Light blue color
@@ -132,12 +181,13 @@ export const Graphs = ({ chartsConfig, csvData }) => {
   }, [chartsConfig]);
 
   return (
-    <div className="grid grid-cols-3 gap-4 p-4 overflow-y-auto">
+    <div className="grid grid-cols-3 gap-4 px-8 overflow-y-auto overflow-x-hidden">
       {canvasRefs.map((ref, i) => (
         <div
+          key={i}
           className="w-full h-fit flex justify-center
          bg-white bg-opacity-50 backdrop-blur-md rounded shadow-xl 
-         p-4 m-2 relative transform transition-transform duration-500 hover:scale-105"
+         p-4 m-2 relative transform transition-all duration-150 hover:bg-opacity-75"
           onClick={() => {
             setModalChart(charts[i]);
             setIsModalOpen(true);
@@ -158,41 +208,3 @@ export const Graphs = ({ chartsConfig, csvData }) => {
     </div>
   );
 };
-
-// create a js function that will make a random chart name in the format of "Column 1 vs Column 2"
-
-function randomChartName() {
-  const columns = [
-    "Total_Revenue",
-    "Yards_Per_Carry",
-    "Customer_Age",
-    "Zipcodes",
-    "Email_Addresses",
-    "Flight_Durations",
-    "Battery_Life_Hours",
-    "Average_Temperatures",
-    "Book_Titles",
-    "Movie_Ratings",
-    "Employee_Salaries",
-    "Game_Scores",
-    "Heart_Rates",
-    "Survey_Responses",
-    "Delivery_Times",
-    "Water_Depths",
-    "Memory_Usage",
-    "Vehicle_Speeds",
-    "Page_Views",
-    "Event_Dates",
-  ];
-  const randomIndex1 = Math.floor(Math.random() * columns.length);
-  let randomIndex2 = Math.floor(Math.random() * columns.length);
-
-  if (randomIndex1 === randomIndex2) {
-    randomIndex2 = Math.floor(Math.random() * columns.length);
-  }
-
-  const randomColumn1 = columns[randomIndex1].replace(/_/g, " ");
-  const randomColumn2 = columns[randomIndex2].replace(/_/g, " ");
-
-  return `${randomColumn1} vs ${randomColumn2}`;
-}

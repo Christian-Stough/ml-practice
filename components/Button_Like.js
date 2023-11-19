@@ -6,6 +6,7 @@ import Confetti from "react-dom-confetti";
 const confettiConfig = {
   angle: "270",
   spread: "222",
+  decay: "0.71",
   startVelocity: "16",
   elementCount: 70,
   dragFriction: 0.12,

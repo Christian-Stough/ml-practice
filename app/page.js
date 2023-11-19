@@ -6,13 +6,15 @@ import { add_picture_url_to_json } from "@/util/server/like-button-add";
 import { Main_Card } from "@/components/Main_Card";
 import { Main_Header } from "@/components/Main_Header";
 import { Graphs } from "@/components/Graphs";
-import { parseCSV } from "@/util/server/csv_to_array";
+import { process_question } from "@/util/server/machine-learning";
+import Papa from "papaparse";
 
-const HomePage = () => {
+export default function HomePage() {
   const [imageUrl, setImageUrl] = useState(null);
-  const [file, setFile] = useState(null);
+  const [columnNames, setColumnNames] = useState(null);
   const [fileArray, setFileArray] = useState([]);
   const [loading, startTransition] = useTransition();
+  const [fileLoading, setFileLoading] = useState(false);
 
   const [data, setData] = useState(null); // [ { title, columns, type, count, order, coolness } ]
 
@@ -25,149 +27,37 @@ const HomePage = () => {
   }, []);
 
   const handleFileChange = async (file) => {
-    setFile(file);
-
     const formData = new FormData();
 
     formData.append("file", file);
 
-    const data = await parseCSV(formData);
-    setFileArray(data);
+    const columnNames = await getColumnNames(file);
+
+    setColumnNames(columnNames);
+
+    setFileLoading(true);
+    const results = await processLargeCSV(file, columnNames);
+    console.log(results[0]);
+    setFileArray(results);
+    setFileLoading(false);
   };
 
   const handleClick = async () => {
-    let formData = new FormData();
-    formData.append("data", file);
     startTransition(async () => {
-      // const results = await process_question(formData);
-      // console.log(results);
+      const results = await process_question(columnNames);
 
-      // if (typeof results !== "object") return;
+      console.log(results);
 
-      const results = [
-        {
-          title: "Position Distribution",
-          columns: ["Pos"],
-          desc: "A visual representation of the distribution of different positions in the dataset.",
-          label: [
-            {
-              column: "Pos",
-              name: "Position",
-            },
-          ],
-          type: "pie",
-          coolness: 72.3,
-        },
-        {
-          title: "Extra Points and Field Goals",
-          columns: ["XPM", "XPA", "FGM", "FGA"],
-          desc: "A comparison of successful extra points and field goals made by players.",
-          label: [
-            {
-              column: "XPM",
-              name: "Extra Points Made",
-            },
-            {
-              column: "XPA",
-              name: "Extra Points Attempted",
-            },
-            {
-              column: "FGM",
-              name: "Field Goals Made",
-            },
-            {
-              column: "FGA",
-              name: "Field Goals Attempted",
-            },
-          ],
-          type: "doughnut",
-          coolness: 78.9,
-        },
-        {
-          title: "Player's Age vs Points Scored",
-          columns: ["Age", "Pts"],
-          desc: "An analysis of how age affects the number of points scored by players.",
-          label: [
-            {
-              column: "Age",
-              name: "Player's Age",
-            },
-            {
-              column: "Pts",
-              name: "Points Scored",
-            },
-          ],
-          type: "line",
-          coolness: 85.6,
-        },
-        {
-          title: "Total Points Distribution",
-          columns: ["Pts"],
-          desc: "A visual representation of the distribution of total points scored by players.",
-          label: [
-            {
-              column: "Pts",
-              name: "Total Points",
-            },
-          ],
-          type: "polarArea",
-          coolness: 88.7,
-        },
-        {
-          title: "Touchdowns by Type",
-          columns: [
-            "RshTD",
-            "RecTD",
-            "PR TD",
-            "KR TD",
-            "FblTD",
-            "IntTD",
-            "OthTD",
-          ],
-          desc: "A comparison of different types of touchdowns scored by players.",
-          label: [
-            {
-              column: "RshTD",
-              name: "Rushing TDs",
-            },
-            {
-              column: "RecTD",
-              name: "Receiving TDs",
-            },
-            {
-              column: "PR TD",
-              name: "Punt Return TDs",
-            },
-            {
-              column: "KR TD",
-              name: "Kickoff Return TDs",
-            },
-            {
-              column: "FblTD",
-              name: "Fumble Recovery TDs",
-            },
-            {
-              column: "IntTD",
-              name: "Interception Return TDs",
-            },
-            {
-              column: "OthTD",
-              name: "Other TDs",
-            },
-          ],
-          type: "bar",
-          coolness: 91.2,
-        },
-      ];
+      if (typeof results !== "object") return;
 
-      setData(
-        results.sort((a, b) => {
-          if (a.coolness > b.coolness) return 1;
-          else if (a.coolness < b.coolness) return -1;
-          else return 0;
-        })
-      );
+      setData(results);
     });
+  };
+
+  const handleReset = () => {
+    setData(null);
+    setFileArray([]);
+    setColumnNames(null);
   };
 
   return (
@@ -185,9 +75,10 @@ const HomePage = () => {
             handleFileChange={handleFileChange}
             handleClick={handleClick}
             loading={loading}
+            handleReset={handleReset}
           />
 
-          <Graphs chartsConfig={data} fileArray={fileArray} />
+          <Graphs chartsConfig={data} sortedFile={fileArray} />
         </>
       ) : (
         <>
@@ -201,11 +92,78 @@ const HomePage = () => {
             handleFileChange={handleFileChange}
             handleClick={handleClick}
             loading={loading}
+            fileLoading={fileLoading}
           />
         </>
       )}
     </div>
   );
+}
+
+const getColumnNames = (file) => {
+  return new Promise((resolve, reject) => {
+    Papa.parse(file, {
+      download: true,
+      header: true,
+      preview: 1,
+      step: function (row, parser) {
+        // Stop parsing after the first row
+        parser.pause();
+        parser.abort();
+
+        // Resolve the promise with the column names
+        resolve(Object.keys(row.data));
+      },
+      error: reject,
+    });
+  });
 };
 
-export default HomePage;
+const processLargeCSV = async (file, columns) => {
+  return new Promise((resolve, reject) => {
+    let linesBuffer = [];
+    let lineCount = 0;
+    let resultsArray = [];
+
+    Papa.parse(file, {
+      worker: true, // To prevent UI freeze
+      step: function (results) {
+        linesBuffer.push(results.data);
+        lineCount++;
+
+        if (lineCount === 10000) {
+          resultsArray.push(sortLines(columns, linesBuffer));
+          linesBuffer = [];
+          lineCount = 0;
+        }
+      },
+      complete: function () {
+        if (linesBuffer.length > 0) {
+          resultsArray.push(sortLines(columns, linesBuffer));
+        }
+
+        resolve(resultsArray); // Resolve with resultsArray
+      },
+      error: function (err) {
+        reject(err); // Reject on error
+      },
+    });
+  });
+};
+
+const sortLines = (columns, lines) => {
+  let sortedFile = {};
+  columns.forEach((column) => {
+    sortedFile[column] = [];
+  });
+
+  lines.forEach((line) => {
+    columns.forEach((column) => {
+      const value = line[columns.indexOf(column)];
+      if (column === value) return;
+      sortedFile[column].push(line[columns.indexOf(column)]);
+    });
+  });
+
+  return sortedFile;
+};
