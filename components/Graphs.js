@@ -31,93 +31,10 @@ export const Graphs = ({ chartsConfig, sortedFile }) => {
       const ctx = canvasRef.current.getContext("2d");
       const chartType = chartData[i].type;
 
-      let values = [];
-
-      sortedFile.forEach((file) => {
-        file[chartData[i]["x-column"]].forEach((x, innerI) =>
-          values.push({
-            x: x,
-            y: file[chartData[i]["y-column"]][innerI],
-          })
-        );
-      });
-
-      if (chartData[i].name === "GDP per Capita by Country") {
-        console.log("values");
-        console.log(values);
-      }
-
-      let combined = {};
-      const counts = {};
-
-      values.forEach((value) => {
-        let x = value.x;
-        let y = value.y;
-
-        if (typeof y === "string") {
-          y = y.replace(/[$€]/g, "").trim();
-          if (y === "" || y === " ") y = "0";
-          y = Number(y);
-          if (isNaN(y)) y = 0;
-        }
-
-        try {
-          y = parseFloat(y);
-        } catch (e) {
-          console.log(`Error parsing ${y} to int`);
-        }
-
-        if (combined[x]) {
-          combined[x] += y;
-          counts[x]++;
-        } else {
-          combined[x] = y;
-          counts[x] = 1;
-        }
-      });
-
-      Object.keys(combined).forEach((key) =>
-        combined[key] === undefined ? delete combined[key] : {}
-      );
-
-      const combinedArray = Object.keys(combined).map((key) => ({
-        x: key,
-        y: combined[key] / counts[key],
-      }));
-
-      combinedArray.sort((a, b) => {
-        if (chartData[i].filter === "asc") {
-          if (a.y > b.y) return 1;
-          else if (a.y < b.y) return -1;
-          else return 0;
-        } else if (chartData[i].filter === "desc") {
-          if (a.y > b.y) return -1;
-          else if (a.y < b.y) return 1;
-          else return 0;
-        } else return 0;
-      });
-
-      if (chartData[i].name === "HDI by Region") {
-        console.log("combinedArray");
-        console.log(combinedArray);
-      }
-
-      let data = combinedArray.slice(0, 10);
-
-      data = data.filter(
-        (item) => item.x !== undefined && item.x !== "undefined"
-      );
-
-      data = data.sort((a, b) => {
-        return parseFloat(a.y) - parseFloat(b.y);
-      });
-      console.log(data);
-
-      const backgroundColors = data.map(
-        () =>
-          `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(
-            Math.random() * 255
-          )}, ${Math.floor(Math.random() * 255)}, 0.5)`
+      const { data, backgroundColors } = get_bar_charts(
+        sortedFile,
+        chartData,
+        i
       );
 
       const options = {
@@ -156,8 +73,6 @@ export const Graphs = ({ chartsConfig, sortedFile }) => {
       };
       chartData[i].options = options;
 
-      setCharts(chartData);
-
       return new Chart(ctx, {
         type: chartType,
         data: {
@@ -174,6 +89,8 @@ export const Graphs = ({ chartsConfig, sortedFile }) => {
         options: options,
       });
     });
+
+    setCharts(chartData);
 
     return () => {
       chartInstances.forEach((chartInstance) => chartInstance.destroy());
@@ -207,4 +124,90 @@ export const Graphs = ({ chartsConfig, sortedFile }) => {
       )}
     </div>
   );
+};
+
+const get_bar_charts = (files, chartData, i) => {
+  let values = [];
+
+  files.forEach((file) => {
+    file[chartData[i]["x-column"]].forEach((x, innerI) =>
+      values.push({
+        x: x,
+        y: file[chartData[i]["y-column"]][innerI],
+      })
+    );
+  });
+
+  let combined = {};
+  const counts = {};
+
+  values.forEach((value) => {
+    let x = value.x;
+    let y = value.y;
+
+    if (typeof y === "string") {
+      y = y.replace(/[$€]/g, "").trim();
+      if (y === "" || y === " ") y = "0";
+      y = Number(y);
+      if (isNaN(y)) y = 0;
+    }
+
+    try {
+      y = parseFloat(y);
+    } catch (e) {
+      console.log(`Error parsing ${y} to int`);
+    }
+
+    if (combined[x]) {
+      combined[x] += y;
+      counts[x]++;
+    } else {
+      combined[x] = y;
+      counts[x] = 1;
+    }
+  });
+
+  Object.keys(combined).forEach((key) =>
+    combined[key] === undefined ? delete combined[key] : {}
+  );
+
+  const combinedArray = Object.keys(combined).map((key) => ({
+    x: key,
+    y: combined[key] / counts[key],
+  }));
+
+  combinedArray.sort((a, b) => {
+    if (chartData[i].filter === "asc") {
+      if (a.y > b.y) return 1;
+      else if (a.y < b.y) return -1;
+      else return 0;
+    } else if (chartData[i].filter === "desc") {
+      if (a.y > b.y) return -1;
+      else if (a.y < b.y) return 1;
+      else return 0;
+    } else return 0;
+  });
+
+  if (chartData[i].name === "HDI by Region") {
+    console.log("combinedArray");
+    console.log(combinedArray);
+  }
+
+  let data = combinedArray.slice(0, 10);
+
+  data = data.filter((item) => item.x !== undefined && item.x !== "undefined");
+
+  data = data.sort((a, b) => {
+    return parseFloat(a.y) - parseFloat(b.y);
+  });
+  console.log(data);
+
+  const backgroundColors = data.map(
+    () =>
+      `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(
+        Math.random() * 255
+      )}, ${Math.floor(Math.random() * 255)}, 0.5)`
+  );
+
+  return { data: data, backgroundColors: backgroundColors };
 };

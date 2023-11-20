@@ -4,9 +4,9 @@ import { system_prompt } from "../prompt";
 export const use_ai = async (columns) => {
   console.log("calling api");
 
-  return await api_call(columns);
+  //return await api_call(columns);
 
-  //return get_test_data();
+  return get_test_data();
 };
 
 const api_call = async (columns) => {
